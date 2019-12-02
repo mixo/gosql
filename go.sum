@@ -1,0 +1,12 @@
+github.com/go-sql-driver/mysql v1.4.1 h1:g24URVg0OFbNUTx9qqY1IRZ9D9z3iPyi5zKhQZpNwpA=
+github.com/go-sql-driver/mysql v1.4.1/go.mod h1:zAC/RDZ24gD3HViQzih4MyKcchzm+sOG5ZlKdlhCg5w=
+github.com/lib/pq v1.2.0 h1:LXpIM/LZ5xGFhOpXAQUIMM1HdyqzVYM13zNdjCEEcA0=
+github.com/lib/pq v1.2.0/go.mod h1:5WUZQaWbwv1U+lTReE5YruASi9Al49XbQIvNi/34Woo=
+github.com/mixo/godt v0.0.0-20191202124427-37328ed6ab27 h1:gx3WxfhWaQi5oN7/ZhpPvuzH+qP/WFQQrdAFYjsRK3A=
+github.com/mixo/godt v0.0.0-20191202124427-37328ed6ab27/go.mod h1:CfvqvZVgQoA3sIMxxzmbBPXj+v15qqgtBz0mpgX+6Fg=
+github.com/mixo/godt v0.1.0 h1:d/dnYfukTiEeu3c7UDK6CNnu1yjgZQukiQYdJG6dFOA=
+github.com/mixo/godt v0.1.0/go.mod h1:1obGWjyCs/b4HvCum560Vf4QLh7AumGQG2H3VdIIboA=
+github.com/mixo/goslice v0.0.0-20191202124937-8e8a48f85ec0 h1:iKDzVd4nTwrsnGK2uqexW6I8I0Cc+/D4RKgl8wCteZ4=
+github.com/mixo/goslice v0.0.0-20191202124937-8e8a48f85ec0/go.mod h1:3wB194OB/kkA/P0U07SIwElBcWLLl238lAU7oI1pkxM=
+github.com/mixo/goslice v0.1.0 h1:66UP7RimksiEvODY+d2xXEqY4yJt60uLpBjXSkNRtps=
+github.com/mixo/goslice v0.1.0/go.mod h1:pcsmGD1x0oba6WarsLCG7xBLJPsQXJYMhGg3kVYAFoo=
