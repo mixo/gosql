@@ -82,7 +82,7 @@ func (this DB) DropTable(tableName string) {
 func (this DB) GetAvgRowCountPerDay(
     tableName, dateColumn string,
     startDate, endDate time.Time,
-    dayCount uint) (avgRowCountPerDay uint) {
+    dayCount int) (avgRowCountPerDay int) {
     db := this.Connect()
     defer db.Close()
 
@@ -95,7 +95,7 @@ func (this DB) GetAvgRowCountPerDay(
     sql += "    FROM %s WHERE %s BETWEEN %s AND %s GROUP BY %s"
     sql += ") q"
     sql = fmt.Sprintf(sql, dayCount, dateColumn, tableName, dateColumn, placeholders[0], placeholders[1], dateColumn)
-
+fmt.Println(sql)
     err := db.QueryRow(sql, godt.ToString(startDate), godt.ToString(endDate)).Scan(&avgRowCountPerDay)
     if err != nil {
         panic(err)
@@ -104,7 +104,7 @@ func (this DB) GetAvgRowCountPerDay(
     return
 }
 
-func (this DB) GetRowCountOnDate(tableName, dateColumn string, date time.Time) (yesterdayRowCount uint) {
+func (this DB) GetRowCountOnDate(tableName, dateColumn string, date time.Time) (yesterdayRowCount int) {
     db := this.Connect()
     defer db.Close()
 
