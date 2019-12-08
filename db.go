@@ -59,24 +59,24 @@ func (this DB) QuoteMultiple(statements []string) (quotedStatements []string) {
     return
 }
 
-func (this DB) Exec(sql string) {
+func (this DB) Exec(sqlQuery string) {
     db := this.Connect()
     defer db.Close()
 
-    _, err := db.Exec(sql)
+    _, err := db.Exec(sqlQuery)
     if err != nil {
         panic(err)
     }
 }
 
 func (this DB) CreateTable(tableName string, columns []string) {
-    sql := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (" + strings.Join(columns, "\n") + ")", this.Quote(tableName))
-    this.Exec(sql)
+    sqlQuery := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (" + strings.Join(columns, ", ") + ")", this.Quote(tableName))
+    this.Exec(sqlQuery)
 }
 
 func (this DB) DropTable(tableName string) {
-    sql := fmt.Sprintf("DROP TABLE IF EXISTS %s", this.Quote(tableName))
-    this.Exec(sql)
+    sqlQuery := fmt.Sprintf("DROP TABLE IF EXISTS %s", this.Quote(tableName))
+    this.Exec(sqlQuery)
 }
 
 func (this DB) GetAvgRowCountPerDay(
@@ -90,13 +90,180 @@ func (this DB) GetAvgRowCountPerDay(
     dateColumn = this.Quote(dateColumn)
     placeholders := this.getPlaceholders(3)
 
-    sql := "SELECT ROUND(SUM(rowCountPerDay) / %d) AS c FROM ("
-    sql += "    SELECT %s, COUNT(*) AS rowCountPerDay "
-    sql += "    FROM %s WHERE %s BETWEEN %s AND %s GROUP BY %s"
-    sql += ") q"
-    sql = fmt.Sprintf(sql, dayCount, dateColumn, tableName, dateColumn, placeholders[0], placeholders[1], dateColumn)
-fmt.Println(sql)
-    err := db.QueryRow(sql, godt.ToString(startDate), godt.ToString(endDate)).Scan(&avgRowCountPerDay)
+    sqlQuery := "SELECT ROUND(SUM(rowCountPerDay) / %d) AS c FROM ("
+    sqlQuery += "    SELECT %s, COUNT(*) AS rowCountPerDay "
+    sqlQuery += "    FROM %s WHERE %s BETWEEN %s AND %s GROUP BY %s"
+    sqlQuery += ") q"
+    sqlQuery = fmt.Sprintf(sqlQuery, dayCount, dateColumn, tableName, dateColumn, placeholders[0], placeholders[1], dateColumn)
+
+    err := db.QueryRow(sqlQuery, godt.ToString(startDate), godt.ToString(endDate)).Scan(&avgRowCountPerDay)
+    if err != nil {
+        panic(err)
+    }
+
+    return
+}
+
+func (this DB) GetAvgRowParamsPerDay(
+    tableName, dateColumn string,
+    startDate, endDate time.Time,
+    dayCount int,
+    quantityColumn string,
+    numericColumns []string,
+    groupColumn string,
+    filteredGroups []interface{}) []map[string]interface{} {
+
+    tableName = this.Quote(tableName)
+    dateColumn = this.Quote(dateColumn)
+    groupColumn = this.Quote(groupColumn)
+    placeholders := this.getPlaceholders(2 + len(filteredGroups))
+
+    stmts := []string{}
+    avgStmts := []string{}
+    for _, numericColumn := range numericColumns {
+    	numericColumn = this.Quote(numericColumn)
+
+    	stmt := fmt.Sprintf("SUM(%s) AS %s", numericColumn, numericColumn)
+    	stmts = append(stmts, stmt)
+
+    	avgStmt := fmt.Sprintf("(SUM(%s) / %d) AS %s", numericColumn, dayCount, numericColumn)
+    	avgStmts = append(avgStmts, avgStmt)
+    }
+    numericColumnStmts := strings.Join(stmts, ", ")
+    if numericColumnStmts != "" {
+    	numericColumnStmts = ", " + numericColumnStmts
+    }
+
+    avgNumericColumnStmts := strings.Join(avgStmts, ", ")
+    if avgNumericColumnStmts != "" {
+    	avgNumericColumnStmts = ", " + avgNumericColumnStmts
+    }
+
+    sqlQuery := fmt.Sprintf("SELECT %s, ROUND(SUM(_quantity) / %d) AS _quantity%s FROM (", groupColumn, dayCount, avgNumericColumnStmts)
+    sqlQuery += fmt.Sprintf("    SELECT %s, %s, COUNT(*) AS _quantity%s ", dateColumn, groupColumn, numericColumnStmts)
+    sqlQuery += fmt.Sprintf("    FROM %s", tableName)
+    sqlQuery += fmt.Sprintf("    WHERE %s BETWEEN %s AND %s", dateColumn, placeholders[0], placeholders[1])
+    if len(filteredGroups) > 0 {
+		sqlQuery += fmt.Sprintf("AND %s IN (%s)", groupColumn, strings.Join(placeholders[2:], ", "))
+    }
+    sqlQuery += fmt.Sprintf("    GROUP BY %s, %s", dateColumn, groupColumn)
+    sqlQuery += fmt.Sprintf(") q GROUP BY %s", groupColumn)
+
+	values := []interface{}{godt.ToString(startDate), godt.ToString(endDate)}
+	if len(filteredGroups) > 0 {
+		values = append(values, filteredGroups...)
+	}
+
+	return this.QueryObjects(sqlQuery, values...)
+}
+
+func (this DB) GetRowParamsOnDate(
+    tableName, dateColumn string,
+    date time.Time,
+    quantityColumn string,
+    numericColumns []string,
+    groupColumn string,
+	filteredGroups []interface{}) []map[string]interface{} {
+
+    tableName = this.Quote(tableName)
+    dateColumn = this.Quote(dateColumn)
+    groupColumn = this.Quote(groupColumn)
+    placeholders := this.getPlaceholders(1 + len(filteredGroups))
+
+    stmts := []string{}
+    for _, numericColumn := range numericColumns {
+    	numericColumn = this.Quote(numericColumn)
+
+    	stmt := fmt.Sprintf("SUM(%s) AS %s", numericColumn, numericColumn)
+    	stmts = append(stmts, stmt)
+    }
+    numericColumnStmts := strings.Join(stmts, ", ")
+    if numericColumnStmts != "" {
+    	numericColumnStmts = ", " + numericColumnStmts
+    }
+
+    sqlQuery := fmt.Sprintf("SELECT %s, COUNT(*) AS _quantity%s ", groupColumn, numericColumnStmts)
+    sqlQuery += fmt.Sprintf("FROM %s", tableName)
+    sqlQuery += fmt.Sprintf("WHERE %s = %s", dateColumn, placeholders[0])
+    if len(filteredGroups) > 0 {
+		sqlQuery += fmt.Sprintf("AND %s IN (%s)", groupColumn, strings.Join(placeholders[1:], ", "))
+    }
+    sqlQuery += fmt.Sprintf("GROUP BY %s", groupColumn)
+
+	values := []interface{}{godt.ToString(date)}
+	if len(filteredGroups) > 0 {
+		values = append(values, filteredGroups...)
+	}
+
+	return this.QueryObjects(sqlQuery, values...)
+}
+
+func (this DB) QueryObjects(sqlQuery string, values... interface{}) (objects []map[string]interface{}) {
+    db := this.Connect()
+    defer db.Close()
+
+    rows, err := db.Query(sqlQuery, values...)
+    if err != nil {
+        panic(err)
+    }
+    defer rows.Close()
+
+    for rows.Next() {
+		columns, err := rows.ColumnTypes()
+		if err != nil {
+			panic(err)
+		}
+
+		values := make([]interface{}, len(columns))
+		object := map[string]interface{}{}
+		for i, column := range columns {
+			var value interface{}
+			databaseTypeName := column.DatabaseTypeName()
+			switch databaseTypeName {
+				case "VARCHAR":
+					value = new(string)
+				case "INT2":
+					value = new(int)
+				case "INT8":
+					value = new(int64)
+				case "NUMERIC":
+					value = new(float64)
+				default:
+					panic(fmt.Sprintf("Undefined database type name '%s'", databaseTypeName))
+			}
+			object[column.Name()] = value
+			values[i] = value
+		}
+
+    	err = rows.Scan(values...)
+    	if err != nil {
+			panic(err)
+    	}
+
+		for name, value := range object {
+			switch value.(type) {
+				case *int:
+					object[name] = *value.(*int)
+				case *int8:
+					object[name] = *value.(*int8)
+				case *int16:
+					object[name] = *value.(*int16)
+				case *int32:
+					object[name] = *value.(*int32)
+				case *int64:
+					object[name] = *value.(*int64)
+				case *string:
+					object[name] = *value.(*string)
+				case *float64:
+					object[name] = *value.(*float64)
+				default:
+					panic(fmt.Sprintf("Undefined type %T", value))
+			}
+		}
+
+		objects = append(objects, object)
+    }
+    err = rows.Err()
     if err != nil {
         panic(err)
     }
@@ -109,9 +276,9 @@ func (this DB) GetRowCountOnDate(tableName, dateColumn string, date time.Time) (
     defer db.Close()
 
     placeholders := this.getPlaceholders(1)
-    sql := fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE %s = %s", this.Quote(tableName), this.Quote(dateColumn), placeholders[0])
+    sqlQuery := fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE %s = %s", this.Quote(tableName), this.Quote(dateColumn), placeholders[0])
 
-    err := db.QueryRow(sql, godt.ToString(date)).Scan(&yesterdayRowCount)
+    err := db.QueryRow(sqlQuery, godt.ToString(date)).Scan(&yesterdayRowCount)
     if err != nil {
         panic(err)
     }
