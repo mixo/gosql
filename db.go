@@ -8,7 +8,6 @@ import (
     "database/sql"
     _ "github.com/go-sql-driver/mysql"
     _ "github.com/lib/pq"
-    "github.com/mixo/goslice"
     "github.com/mixo/godt"
 )
 
@@ -292,7 +291,7 @@ func (this DB) InsertMultiple(tableName string, rows [][]interface{}, columns []
     db := this.Connect()
     defer db.Close()
 
-    for _, rowsPart := range goslice.Split(rows, maxInsertRows) {
+    for _, rowsPart := range this.splitRows(rows, maxInsertRows) {
         placeholders := this.getRowsPlaceholders(rowsPart)
         values := this.getRowsValues(rowsPart)
         _, err := db.Exec(queryBasis + placeholders, values...)
@@ -334,7 +333,7 @@ func (this DB) getPlaceholders(quantity int) (placeholders []string) {
 }
 
 func (this DB) getMysqlPlaceholders(quantity int) []string {
-    return goslice.FillWithStrings([]string{}, "?", quantity)
+    return this.fillWithStrings([]string{}, "?", quantity)
 }
 
 func (this DB) getPostgresPlaceholders(quantity int) (placeholders []string) {
@@ -353,8 +352,8 @@ func (this DB) getRowsValues(rows [][]interface{}) (values []interface{}) {
 }
 
 func (this DB) getMysqlRowsPlaceholders(rowPlaceholdersCount, rowCount int) string {
-    rowPlaceholdersString := "(" + strings.Join(goslice.FillWithStrings([]string{}, "?", rowPlaceholdersCount), ",") + ")"
-    return strings.Join(goslice.FillWithStrings([]string{}, rowPlaceholdersString, rowCount), ",")
+    rowPlaceholdersString := "(" + strings.Join(this.fillWithStrings([]string{}, "?", rowPlaceholdersCount), ",") + ")"
+    return strings.Join(this.fillWithStrings([]string{}, rowPlaceholdersString, rowCount), ",")
 }
 
 func (this DB) getPostgresRowsPlaceholders(rowPlaceholdersCount, rowCount int) string {
@@ -370,5 +369,30 @@ func (this DB) getPostgresRowsPlaceholders(rowPlaceholdersCount, rowCount int) s
     }
 
     return strings.Join(placeholders, ",")
+}
+
+func (this DB) splitRows(slice [][]interface{}, size int) (slices [][][]interface{}) {
+    for len(slice) > 0 {
+        if size > len(slice) {
+            size = len(slice)
+        }
+        slices = append(slices, slice[0:size])
+        slice = slice[size:]
+    }
+    return
+}
+
+func (this DB) fillWithStrings(slice []string, value string, count int) []string {
+    for i := 0; i < count; i++ {
+        slice = append(slice, value)
+    }
+    return slice
+}
+
+func (this DB) toString(slice []interface{}) (stringSlice []string) {
+    for _, item := range slice {
+        stringSlice = append(stringSlice, item.(string))
+    }
+    return
 }
 
