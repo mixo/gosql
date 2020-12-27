@@ -183,7 +183,7 @@ func (this DB) GetRowParamsOnDate(
 
     sqlQuery := fmt.Sprintf("SELECT %s, COUNT(*) AS _quantity%s ", groupColumn, numericColumnStmts)
     sqlQuery += fmt.Sprintf("FROM %s", tableName)
-    sqlQuery += fmt.Sprintf("WHERE %s = %s", dateColumn, placeholders[0])
+    sqlQuery += fmt.Sprintf("WHERE %s = %s ", dateColumn, placeholders[0])
     if len(filteredGroups) > 0 {
 		sqlQuery += fmt.Sprintf("AND %s IN (%s)", groupColumn, strings.Join(placeholders[1:], ", "))
     }
@@ -226,6 +226,7 @@ func (this DB) QueryObjects(sqlQuery string, values... interface{}) (objects []m
 				case "INT8":
 					value = new(int64)
 				case "NUMERIC":
+				case "DECIMAL":
 					value = new(float64)
 				default:
 					panic(fmt.Sprintf("Undefined database type name '%s'", databaseTypeName))
