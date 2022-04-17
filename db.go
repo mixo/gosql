@@ -224,6 +224,7 @@ func (this DB) QueryObjects(sqlQuery string, values... interface{}) (objects []m
 				case "INT2":
 					value = new(int)
 				case "INT8":
+				case "BIGINT":
 					value = new(int64)
 				case "NUMERIC":
 				case "DECIMAL":
