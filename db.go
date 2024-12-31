@@ -182,7 +182,7 @@ func (this DB) GetRowParamsOnDate(
 	}
 
 	sqlQuery := fmt.Sprintf("SELECT %s, COUNT(*) AS _quantity%s ", groupColumn, numericColumnStmts)
-	sqlQuery += fmt.Sprintf("FROM %s", tableName)
+	sqlQuery += fmt.Sprintf("FROM %s ", tableName)
 	sqlQuery += fmt.Sprintf("WHERE %s BETWEEN %s AND %s ", dateColumn, placeholders[0], placeholders[1])
 	if len(filteredGroups) > 0 {
 		sqlQuery += fmt.Sprintf("AND %s IN (%s)", groupColumn, strings.Join(placeholders[1:], ", "))
