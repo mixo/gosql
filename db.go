@@ -167,7 +167,7 @@ func (this DB) GetRowParamsOnDate(
 	tableName = this.Quote(tableName)
 	dateColumn = this.Quote(dateColumn)
 	groupColumn = this.Quote(groupColumn)
-	placeholders := this.getPlaceholders(1 + len(filteredGroups))
+	placeholders := this.getPlaceholders(2 + len(filteredGroups))
 
 	stmts := []string{}
 	for _, numericColumn := range numericColumns {
@@ -183,13 +183,16 @@ func (this DB) GetRowParamsOnDate(
 
 	sqlQuery := fmt.Sprintf("SELECT %s, COUNT(*) AS _quantity%s ", groupColumn, numericColumnStmts)
 	sqlQuery += fmt.Sprintf("FROM %s", tableName)
-	sqlQuery += fmt.Sprintf("WHERE %s = %s ", dateColumn, placeholders[0])
+	sqlQuery += fmt.Sprintf("WHERE %s BETWEEN %s AND %s", dateColumn, placeholders[0], placeholders[1])
 	if len(filteredGroups) > 0 {
 		sqlQuery += fmt.Sprintf("AND %s IN (%s)", groupColumn, strings.Join(placeholders[1:], ", "))
 	}
 	sqlQuery += fmt.Sprintf("GROUP BY %s", groupColumn)
 
-	values := []interface{}{godt.ToString(date)}
+	values := []interface{}{
+		fmt.Printf("%s 00:00:00", date.Format("2006-01-02")),
+		fmt.Printf("%s 23:59:59", date.Format("2006-01-02")),
+	}
 	if len(filteredGroups) > 0 {
 		values = append(values, filteredGroups...)
 	}
