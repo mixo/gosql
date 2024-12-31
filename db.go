@@ -190,8 +190,8 @@ func (this DB) GetRowParamsOnDate(
 	sqlQuery += fmt.Sprintf("GROUP BY %s", groupColumn)
 
 	values := []interface{}{
-		fmt.Printf("%s 00:00:00", date.Format("2006-01-02")),
-		fmt.Printf("%s 23:59:59", date.Format("2006-01-02")),
+		fmt.Sprintf("%s 00:00:00", date.Format("2006-01-02")),
+		fmt.Sprintf("%s 23:59:59", date.Format("2006-01-02")),
 	}
 	if len(filteredGroups) > 0 {
 		values = append(values, filteredGroups...)
